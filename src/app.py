@@ -3,6 +3,9 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 import os
 from flask import Flask, request, jsonify, url_for, send_from_directory
+from flask_jwt_extended import JWTManager
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
@@ -29,6 +32,10 @@ else:
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MIGRATE = Migrate(app, db, compare_type = True)
 db.init_app(app)
+
+#  Configura la extensión Flask-JWT-Extended
+app.config["JWT_SECRET_KEY"] = "Th1S-1s_MyN3w/JWT#App.07" # ESTA PALABRA ES LO QUE GENERA LUEGO LOS TOKENS UNICOS Y LO QUE NO SE DEBE COMPARTIR # ¡Cambia las palabras "super-secret" por otra cosa!
+jwt = JWTManager(app)
 
 # Allow CORS requests to this API
 CORS(app)
@@ -62,6 +69,36 @@ def serve_any_other_file(path):
     response = send_from_directory(static_file_dir, path)
     response.cache_control.max_age = 0 # avoid cache memory
     return response
+
+# Crea una ruta para autenticar a los usuarios y devolver el token JWT.
+# La función create_access_token() se utiliza para generar el JWT.
+@app.route("/token", methods=["POST"])
+def create_token():
+    username = request.json.get("username", None)
+    password = request.json.get("password", None)
+
+    # Consulta la base de datos por el nombre de usuario y la contraseña
+    user = User.filter.query(username=username, password=password).first()
+
+    if user is None:
+          # el usuario no se encontró en la base de datos
+        return jsonify({"msg": "Bad username or password"}), 401
+
+    
+    # crea un nuevo token con el id de usuario dentro
+    access_token = create_access_token(identity=user.id)
+    return jsonify({ "token": access_token, "user_id": user.id })
+
+# Protege una ruta con jwt_required, bloquea las peticiones
+# sin un JWT válido presente.
+@app.route("/protected", methods=["GET"])
+@jwt_required()
+def protected():
+    # Accede a la identidad del usuario actual con get_jwt_identity
+    current_user_id = get_jwt_identity()
+    user = User.filter.get(current_user_id)  
+
+    return jsonify({"id": user.id, "username": user.username }), 200
 
 
 # this only runs if `$ python src/main.py` is executed

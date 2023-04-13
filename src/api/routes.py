@@ -16,3 +16,21 @@ def handle_hello():
     }
 
     return jsonify(response_body), 200
+
+# @api.route('/signup', methods=['POST'])
+# def sign_up():
+
+#     response_body = {
+#         "message": "Creating User"
+#     }
+
+#     return jsonify(response_body), 200
+
+# @api.route('/login', methods=['POST', 'GET'])
+# def login():
+
+#     response_body = {
+#         "message": "Login User"
+#     }
+
+#     return jsonify(response_body), 200
