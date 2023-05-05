@@ -1,14 +1,27 @@
 import React from "react";
 
+import { useNavigate } from "react-router-dom";
+
 import useAppContext from "../store/AppContext.js";
 
 
 const Login = () => {
   const {store, actions} = useAppContext();
 
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    actions.handleSubmitLogIn(e)
+    .then(() => {navigate("/protected")})
+
+  }
+
   return (
     <form className="container">
       <h2>INICIO DE SESIÓN:</h2>
+      <h3>Si ya tienes una cuenta, introduzcala</h3>
       <div className="mb-3">
         <label htmlFor="exampleInputEmail1" className="form-label">
           Email address
@@ -39,7 +52,7 @@ const Login = () => {
           onChange={(e) => actions.setPassword(e.target.value)}
         />
       </div>
-      <button type="submit" className="btn btn-primary" onClick={(e) => actions.handleSubmitLogIn(e, store.email, store.password)}>
+      <button type="submit" className="btn btn-primary" onClick={(e) => handleSubmit(e)}>
         Submit
       </button>
     </form>

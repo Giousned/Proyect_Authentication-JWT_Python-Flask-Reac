@@ -1,11 +1,11 @@
 
-export const login = async (mail, pass) => {
+export const login = async (email, pass) => {
     const resp = await fetch(
-        `https://3001-4geeksacade-reactflaskh-buvlx6ws0oc.ws-eu94.gitpod.io/token`,
+        `https://3001-giousned-proyectauthent-x2436g3b4hv.ws-eu96b.gitpod.io/token`,
         {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: mail, password: pass }),
+        body: JSON.stringify({ email, pass }),
         }
     );
 
@@ -27,13 +27,13 @@ export const login = async (mail, pass) => {
     return data;
   };
 
-export const register = async (mail, pass) => {
+export const register = async (email, pass) => {
     const resp = await fetch(
-        `https://3001-4geeksacade-reactflaskh-buvlx6ws0oc.ws-eu94.gitpod.io/signup`,
+        `https://3001-giousned-proyectauthent-x2436g3b4hv.ws-eu96b.gitpod.io/signup`,
         {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: mail, password: pass }),
+        body: JSON.stringify({ email, pass }),
         }
     );
 
@@ -52,12 +52,12 @@ export const register = async (mail, pass) => {
 
 
 // asumiendo que "/protected" es un endpoint privado
-export const getMyTasks = async () => {
+export const getMyToken = async () => {
     // retrieve token form sessionStorage
     const token = sessionStorage.getItem("jwt-token");
 
     const resp = await fetch(
-        `https://3001-4geeksacade-reactflaskh-buvlx6ws0oc.ws-eu94.gitpod.io/protected`,
+        `https://3001-giousned-proyectauthent-x2436g3b4hv.ws-eu96b.gitpod.io/protected`,
         {
         method: "GET",
         headers: {

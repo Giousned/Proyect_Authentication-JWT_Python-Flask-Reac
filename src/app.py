@@ -75,23 +75,39 @@ def serve_any_other_file(path):
 def signup():
     body = request.json
 
-    if body["email"] == None or body["password"] == None:
+    if body["email"] == None or body["pass"] == None:
         return jsonify({"msg": "Insert and email or password"}), 400
 
     # Crear un nuevo usuario en la base de datos
-    new_user = User(email = body["email"], password = body["password"], is_active = True)
+    new_user = User(email = body["email"], password = body["pass"], is_active = True)
 
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({"code": 200, "mensaje": "Todo ha ido bien"})
+    return jsonify({"code": 200, "mensaje": "Usuario creado correctamente"})
+
+@app.route("/users", methods=["GET"])
+def users():
+
+    try:
+
+        query = db.select(User).order_by(User.id)
+        users = db.session.execute(query).scalars()
+
+        user_list = [user.serialize() for user in users]
+
+        return {"code": 200, "msg": "Usuarios existentes obtenidos", "users": user_list}
+
+    except Exception as error:
+        print(error)
+        return jsonify(users_response), users_response["code"]
 
 # Crea una ruta para autenticar a los usuarios y devolver el token JWT.
 # La función create_access_token() se utiliza para generar el JWT.
 @app.route("/token", methods=["POST"])
 def create_token():
     email = request.json.get("email", None)
-    password = request.json.get("password", None)
+    password = request.json.get("pass", None)
 
     # Consulta la base de datos por el nombre de usuario y la contraseña
     # user = User.filter.query(email=email).first()                   # No se como hacer esta query segun el metodo de la academia
@@ -110,8 +126,8 @@ def create_token():
 
     if password == user.password:
         # crea un nuevo token con el id de usuario dentro
-        access_token = create_access_token(identity=email)
-        return jsonify({ "token": access_token, "email": email })
+        access_token = create_access_token(identity=user.serialize())
+        return jsonify({ "token": access_token, "user": user.serialize() })
     else:
         return jsonify({"msg": "Bad email or password"}), 401       # SIEMPRE PONER EMAIL O PASS, NUNCA DECIR 1 SOLA DE LAS 2 ESTÁ MAL, MUCHA INFORMACIÓN GRATIS PARA LOS HACKERS
 
@@ -121,14 +137,17 @@ def create_token():
 @jwt_required()
 def protected():
     # Accede a la identidad del usuario actual con get_jwt_identity
-    current_user_email = get_jwt_identity()
+    current_user = get_jwt_identity()
     # user = User.filter.get(current_user_email)            # No se como hacer esta query segun el metodo de la academia
 
-    query = db.session.query(User).filter(User.email == current_user_email)
-
+    query = db.session.query(User).filter(User.email == current_user["email"])
     user = db.session.execute(query).scalars().one()
 
-    return jsonify({"id": user.id, "email": user.email }), 200
+    access_token = create_access_token(identity=user.serialize())
+
+    return jsonify({ "code": 200, "msg": "Inicio de sesión correcto", "token": access_token, "user": user.serialize() }), 200
+
+
 
 
 # this only runs if `$ python src/main.py` is executed

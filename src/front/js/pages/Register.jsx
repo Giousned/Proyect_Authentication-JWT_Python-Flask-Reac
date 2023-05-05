@@ -1,10 +1,23 @@
 import React from "react";
 
+import { useNavigate } from "react-router-dom";
+
 import useAppContext from "../store/AppContext.js";
 
 const Register = () => {
 
   const {store, actions} = useAppContext();
+
+  const navigate = useNavigate();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    actions.handleSubmitRegister(e);
+
+    navigate("/login")
+
+  }
 
 
 
@@ -41,7 +54,7 @@ const Register = () => {
           onChange={(e) => actions.setPassword(e.target.value)}
         />
       </div>
-      <button type="submit" className="btn btn-primary" onClick={(e) => actions.handleSubmitRegister(e, store.email, store.password)}>
+      <button type="submit" className="btn btn-primary" onClick={(e) => handleSubmit(e)}>
         Submit
       </button>
     </form>
