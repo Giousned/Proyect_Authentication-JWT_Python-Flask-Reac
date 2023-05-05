@@ -3,85 +3,41 @@ import React from "react";
 import { createContext, useContext } from "react";
 import { useState } from "react";
 
+import { login, register, getMyTasks } from "../services/FETCH.js";
+
 const AppContext = createContext();
 
 export const AppContextProvider = ({ children }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [usuario, setUsuario] = useState("");
-  
+  const [token, setToken] = useState("");
 
 
-  const login = async (email, pass) => {
-    const resp = await fetch(
-      `https://3000-4geeksacade-reactflaskh-buvlx6ws0oc.ws-eu94.gitpod.io/token`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: email, password: pass }),
-      }
-    );
-
-    if (!resp.ok) throw Error("There was a problem in the login request");
-
-    if (resp.status === 401) {
-      throw "Invalid credentials";
-    } else if (resp.status === 400) {
-      throw "Invalid email or password format";
-    }
-
-    const data = await resp.json();
-
-    // save your token in the localStorage
-    // also you should set your user into the store using the setStore function
-
-    localStorage.setItem("jwt-token", data.token);
-
-    return data;
-  };
-
-  // asumiendo que "/protected" es un endpoint privado
-  const getMyTasks = async (username, password) => {
-    // retrieve token form localStorage
-    const token = localStorage.getItem("jwt-token");
-
-    const resp = await fetch(
-      `https://3000-4geeksacade-reactflaskh-buvlx6ws0oc.ws-eu94.gitpod.io/protected`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + token // ⬅⬅⬅ authorization token
-        }
-      }
-    );
-
-    if (!resp.ok) throw Error("There was a problem in the login request");
-    else if (resp.status === 403) {
-      throw "Missing or invalid token";
-    } else {
-      throw "Uknon error";
-    }
-
-    const data = await resp.json();
-
-    console.log("This is the data you requested", data);
-
-    return data;
-  };
 
   const handleSubmitRegister = (e, email, password) => {
     e.preventDefault();
 
-    login(email, password);
+    dataReturned = register(email, password);
 
-    getMyTasks(email, password);
+    // setToken(dataReturned.token)
+
+    // getMyTasks(email, password);
+  };
+
+  const handleSubmitLogIn = (e, email, password) => {
+    e.preventDefault();
+
+    dataReturned = login(email, password);
+
+    setToken(dataReturned.token)
   };
 
   const store = {
     email,
     password,
     usuario,
+    token,
   };
 
   const actions = {
@@ -89,6 +45,7 @@ export const AppContextProvider = ({ children }) => {
     setPassword,
     setUsuario,
     handleSubmitRegister,
+    handleSubmitLogIn,
   };
 
   return (

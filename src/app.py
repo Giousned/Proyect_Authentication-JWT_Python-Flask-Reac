@@ -14,6 +14,7 @@ from api.models import db
 from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
+from api.models import User
 
 #from models import Person
 
@@ -34,8 +35,8 @@ MIGRATE = Migrate(app, db, compare_type = True)
 db.init_app(app)
 
 #  Configura la extensión Flask-JWT-Extended
-app.config["JWT_SECRET_KEY"] = "Th1S-1s_MyN3w/JWT#App.07" # ESTA PALABRA ES LO QUE GENERA LUEGO LOS TOKENS UNICOS Y LO QUE NO SE DEBE COMPARTIR # ¡Cambia las palabras "super-secret" por otra cosa!
-jwt = JWTManager(app)
+app.config["JWT_SECRET_KEY"] = os.environ.get('JWT_SECRET') # ESTA PALABRA ES LO QUE GENERA LUEGO LOS TOKENS UNICOS Y LO QUE NO SE DEBE COMPARTIR # ¡Cambia las palabras "super-secret" por otra cosa!
+jwt = JWTManager(app)                               # LA PONGO EN ENV PARA NO SUBIRLO A LA NUBE Y QUE SEA SECRETA
 
 # Allow CORS requests to this API
 CORS(app)
@@ -70,24 +71,49 @@ def serve_any_other_file(path):
     response.cache_control.max_age = 0 # avoid cache memory
     return response
 
+@app.route("/signup", methods=["POST"])
+def signup():
+    body = request.json
+
+    if body["email"] == None or body["password"] == None:
+        return jsonify({"msg": "Insert and email or password"}), 400
+
+    # Crear un nuevo usuario en la base de datos
+    new_user = User(email = body["email"], password = body["password"], is_active = True)
+
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"code": 200, "mensaje": "Todo ha ido bien"})
+
 # Crea una ruta para autenticar a los usuarios y devolver el token JWT.
 # La función create_access_token() se utiliza para generar el JWT.
 @app.route("/token", methods=["POST"])
 def create_token():
-    username = request.json.get("username", None)
+    email = request.json.get("email", None)
     password = request.json.get("password", None)
 
     # Consulta la base de datos por el nombre de usuario y la contraseña
-    user = User.filter.query(username=username, password=password).first()
+    # user = User.filter.query(email=email).first()                   # No se como hacer esta query segun el metodo de la academia
+    query = db.session.query(User).filter(User.email == email)
+
+    user = db.session.execute(query).scalars().one()
 
     if user is None:
-          # el usuario no se encontró en la base de datos
-        return jsonify({"msg": "Bad username or password"}), 401
+        # el usuario no se encontró en la base de datos
+        return jsonify({"msg": "Bad email or password"}), 401       # SIEMPRE PONER EMAIL O PASS, NUNCA DECIR 1 SOLA DE LAS 2 ESTÁ MAL, MUCHA INFORMACIÓN GRATIS PARA LOS HACKERS
 
     
-    # crea un nuevo token con el id de usuario dentro
-    access_token = create_access_token(identity=user.id)
-    return jsonify({ "token": access_token, "user_id": user.id })
+    # HARCODEANDO PRUEBA FACIL DE EMAIL
+    # if email != "test" or password != "test":
+    #     return jsonify({"msg": "Bad email or password"}), 401
+
+    if password == user.password:
+        # crea un nuevo token con el id de usuario dentro
+        access_token = create_access_token(identity=email)
+        return jsonify({ "token": access_token, "email": email })
+    else:
+        return jsonify({"msg": "Bad email or password"}), 401       # SIEMPRE PONER EMAIL O PASS, NUNCA DECIR 1 SOLA DE LAS 2 ESTÁ MAL, MUCHA INFORMACIÓN GRATIS PARA LOS HACKERS
 
 # Protege una ruta con jwt_required, bloquea las peticiones
 # sin un JWT válido presente.
@@ -95,10 +121,14 @@ def create_token():
 @jwt_required()
 def protected():
     # Accede a la identidad del usuario actual con get_jwt_identity
-    current_user_id = get_jwt_identity()
-    user = User.filter.get(current_user_id)  
+    current_user_email = get_jwt_identity()
+    # user = User.filter.get(current_user_email)            # No se como hacer esta query segun el metodo de la academia
 
-    return jsonify({"id": user.id, "username": user.username }), 200
+    query = db.session.query(User).filter(User.email == current_user_email)
+
+    user = db.session.execute(query).scalars().one()
+
+    return jsonify({"id": user.id, "email": user.email }), 200
 
 
 # this only runs if `$ python src/main.py` is executed
